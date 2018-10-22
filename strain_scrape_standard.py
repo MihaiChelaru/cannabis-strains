@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from urllib.error import HTTPError
 import pandas as pd
 from datetime import date, datetime
-import gevent
 from gevent.pool import Pool
 from gevent import monkey
 
@@ -23,39 +22,40 @@ def rip_strains(url):
         soup = BeautifulSoup(html, "html.parser")
         print(str(datetime.now()).split('.')[0], "Now scraping:", url)
 
-        # Get species (indica, sativa, hybrid) by parsing url
-        name = soup.find("meta",{"name":"sailthru.title"}).attrs['content']
-        species = urlparse(url)[2].split("/")[1]
+        # Initialize single-row dataframe filled with 0s for desired columns
+        strain_df = pd.DataFrame(0, index=[0], columns=cols)
 
-        i = 2
-        # Strain name, 3 flavours, 30 columns of attribute: value
-        strain_info = [name, species, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
-                 "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+        # Get species (indica, sativa, hybrid) by parsing url
+        strain_df['Strain Name'] = soup.find("meta",{"name":"sailthru.title"}).attrs['content']
+        strain_df['Species'] = urlparse(url)[2].split("/")[1]
+
+        # Get review count and rating value
+        strain_df['Review Count'] = soup.find("span", {"itemprop": "reviewCount"}).text
+        strain_df['Rating Value'] = soup.find("span", {"class": "rating-number"}).text
 
         for flavour in soup.find_all("div",{"class":"l-square-content"}):
-            strain_info[i] = flavour.find("span").text[3:]
-            i += 1
-        # Set i = 4 in case less than 3 flavours
-        i = 5
+            flav_name = flavour.find("span").text[3:]
+            strain_df[flav_name] = 1
+
         for bar in soup.find_all("div",{"class":"m-histogram-item-wrapper"}):
-            strain_info[i] = bar.find("div").string
-            i += 1
+            prop_name = bar.find("div").string
             amount = bar.find("div",{"class":"m-attr-bar"}).attrs['style']
-            strain_info[i] = amount[6:(len(amount)-1)]
-            i += 1
-        results.append(pd.DataFrame([strain_info], columns=cols))
+            strain_df[prop_name] = amount[6:(len(amount)-1)]
+
+        results.append(strain_df)
+
     except HTTPError as e:
         print("",end="")
     except AttributeError as f:
         print("Warning: "+ url +" not found",end="")
 
 
-links = pd.read_csv("Links/leafly_unique_links.csv", delimiter=',', engine='c',
+links = pd.read_csv("Links/leafly_test.csv", delimiter=',', engine='c',
                     header=None, low_memory=False, na_filter=False)
 
 results = []
 
-cols = ['strain_name', 'species', 'Pain', 'Euphoric', 'Fatigue', 'Paranoid',
+cols = ['Strain Name', 'Species', 'Review Count', 'Rating Value', 'Pain', 'Euphoric', 'Fatigue', 'Paranoid',
         'Focused', 'Spasticity', 'Nausea', 'Tingly', 'Headache', 'Dry Mouth', 'Aroused', 'Happy', 'Muscle Spasms',
         'Uplifted', 'Anxious', 'Energetic', 'Headaches', 'Depression', 'Giggly', 'Talkative', 'Dizzy', 'Insomnia',
         'Inflammation', 'Stress', 'Relaxed', 'Seizures', 'Cramps', 'Sleepy', 'Hungry', 'Lack of Appetite', 'Dry Eyes',
@@ -71,6 +71,6 @@ pool.map(rip_strains, links[0])
 
 df = pd.concat(results, ignore_index=True)
 
-df.to_csv("Results/StrainScrape_full_"+date.today().isoformat()+".csv", index=False)
+df.to_csv("Results/StrainScrape_test_"+date.today().isoformat()+".csv", index=False)
 
 print("Finished running.")

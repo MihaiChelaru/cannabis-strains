@@ -17,3 +17,6 @@ soup = BeautifulSoup(html, "html.parser")
 
 for flavour in soup.find_all("div",{"class":"l-square-content"}):
     print(flavour.find("span").text[3:])
+
+review_count = soup.find("span", {"itemprop":"reviewCount"}).text
+rating_value = soup.find("span", {"class":"rating-number"}).text
