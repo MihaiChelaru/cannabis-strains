@@ -47,10 +47,10 @@ def rip_strains(url):
     except HTTPError as e:
         print("",end="")
     except AttributeError as f:
-        print("Warning: "+ url +" not found",end="")
+        print("Warning: "+ url +" not found")
 
 
-links = pd.read_csv("Links/leafly_test.csv", delimiter=',', engine='c',
+links = pd.read_csv("Links/leafly_unique_links.csv", delimiter=',', engine='c',
                     header=None, low_memory=False, na_filter=False)
 
 results = []
@@ -71,6 +71,6 @@ pool.map(rip_strains, links[0])
 
 df = pd.concat(results, ignore_index=True)
 
-df.to_csv("Results/StrainScrape_test_"+date.today().isoformat()+".csv", index=False)
+df.to_csv("Results/StrainScrape_full_"+date.today().isoformat()+".csv", index=False)
 
 print("Finished running.")
