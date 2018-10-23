@@ -42,6 +42,6 @@ while True:
     last_height = new_height
 
 df = pd.DataFrame({'links' : list(links)})
-df.to_csv('Links/leafly_crawled_test.csv', header=False, index=False)
+df.to_csv('Links/leafly_crawled_full.csv', header=False, index=False)
 
 driver.quit()
